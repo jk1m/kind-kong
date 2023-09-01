@@ -43,7 +43,7 @@ COPY configs/ ./configs
 
 RUN envsubst < startup.sh > start.sh && \
   chmod +x start.sh && \
-  rm -f startup-kong.sh && \
+  rm -f startup.sh && \
   echo 'alias deck="deck --kong-addr https://kong.127-0-0-1.nip.io/api --tls-skip-verify"' >> ~/.bashrc && \
   source ~/.bashrc
 
