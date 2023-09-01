@@ -1,5 +1,5 @@
 # kind-kong
-**K**ubernetes**inD**ocker with Kong
+**K**ubernetes **in** **D**ocker with Kong
 
 Detailed information on KinD can be found [here](https://kind.sigs.k8s.io/).
 
@@ -45,61 +45,47 @@ This will take a minute or two. Wait until all pods are up and migrations have c
 By default, the kind cluster is named `kind`.
 
 > **Note**
-> If you're actively watching the pods, you may notice one or two may go into `CrashLoopBackOff`. Don' worry about it, it'll fix itself.
+> If you're actively watching the pods, you may notice one or two might go into `CrashLoopBackOff`. Don' worry about it, it'll fix itself.
 
 ### Admin API
 The admin api is accessible within the container.
 
-Using `httpie`, run:
 ```bash
 http --verify=no https://kong.127-0-0-1.nip.io/api/services
+# or
+curl -sk https://kong.127-0-0-1.nip.io/api/services | jq
 ```
+It is also accessible from your browser at `https://kong.127-0-0-1.nip.io/api/services`.
 
-Using `curl`:
-```bash
-curl -k https://kong.127-0-0-1.nip.io/api/services | jq
-```
+> **Note**
+> "You will receive a 'Your Connection is not Private' warning message due to using selfsigned certs. If you are using Chrome there may not be an “Accept risk and continue” option, to continue type `thisisunsafe` while the tab is in focus to continue."
 
 ### Kong manager
 The Kong manager can be accessible outside the container. In your browser, navigate to `https://kong.127-0-0-1.nip.io/`.
-
-"You will receive a 'Your Connection is not Private' warning message due to using selfsigned certs. If you are using Chrome there may not be an “Accept risk and continue” option, to continue type `thisisunsafe` while the tab is in focus to continue."
 
 ## Provision sample service, routes, etc
 > **Note**
 > Because `deck` is hitting Kong locally and selfsigned certs are in use, additional flags have to be passed to it. To make things easier, an alias has been created pointing `deck` to `deck --kong-addr https://kong.127-0-0-1.nip.io/api --tls-skip-verify`.
 
-First, in the container, you need to `dump` the existing Kong config.
-> **Warning**
-> Trying to sync without first dumping will result in a **_bunch_** of stuff getting deleted. You'll have to start over from the beginning if this happens.
+> **Note**
+> `flights-oas.yml` has been taken from [Kong's Github](https://github.com/Kong/KongAir/blob/main/flight-data/flights/openapi.yaml) repo and stored here for safe keeping and version control.
 
-```bash
-deck dump -o dump.yml
-```
+> **Note**
+> The `deck` commands below that use the `-o` flag store the output into different files for your viewing rather than overwriting anything.
 
-Get the sample flights spec from Kong:
+Convert `flights-oas.yml` to Kong's config:
 ```bash
-wget https://github.com/Kong/KongAir/blob/main/flight-data/flights/openapi.yaml
-```
-
-Convert `openapi.yaml` to Kong's config:
-```bash
-deck file openapi2kong -s penapi.yaml -o flights.yml
+deck file openapi2kong -s configs/flights-oas.yml -o flights.yml
 ```
 
 Add tags:
 ```bash
-deck file add-tags -s flights.yml "flights-service" -o flights.yml 
-```
-
-Merge it:
-```bash
-deck file merge dump.yml flights.yml -o all.yml
+deck file add-tags -s flights.yml "flights-service" -o all.yml 
 ```
 
 Sync it:
 ```bash
-deck sync -s all.yml
+deck sync --select-tag "flights-service" -s all.yml
 ```
 
 In the container, hit the `flights` endpoint.
@@ -114,16 +100,23 @@ Outside the container, in your browser, navigate to `http://localhost/flights`.
 ## Tear down
 Inside the container, simply run:
 ```bash
-./delete.sh # or kind delete cluster
+./delete.sh
+# or
+kind delete cluster
 
-exit # to get out of the container
+# to get out of the container
+exit 
 ```
 
 Outside the container, run:
 ```bash
+# stop the container
 docker stop kind-kong
 
+# delete the stopped container
 docker rm kind-kong
 
+# delete the volume left behind
+# note: this will also delete any dangling volumes you may have
 docker volume rm $(docker volume ls -qf "dangling=true")
 ```
