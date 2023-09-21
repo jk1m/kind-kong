@@ -1,4 +1,9 @@
 # kind-kong
+
+> **Note**
+> As there are various use cases with KinD (Kong, Istio, etc) this repo is being archived. A newer repo containing
+> all configurations can be found [here](https://github.com/jk1m/kind).
+
 **K**ubernetes **in** **D**ocker with Kong
 
 Detailed information on KinD can be found [here](https://kind.sigs.k8s.io/).
